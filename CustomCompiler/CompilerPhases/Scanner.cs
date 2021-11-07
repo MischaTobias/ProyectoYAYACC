@@ -1,6 +1,7 @@
 ﻿using System;
 using CustomCompiler.Tokens;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace CustomCompiler.CompilerPhases
 {
@@ -32,7 +33,14 @@ namespace CustomCompiler.CompilerPhases
                 if (_index == _regexp.Length - 1) return result;
                 char peek = _regexp[_index];
 
-                if (result.Tag == TokenType.NonTerminal && peek == ';') return result;
+                if (result.Tag == TokenType.NonTerminal)
+                {
+                    if (new[] { TokenType.SemiColon, TokenType.Apostrophe, TokenType.Colon, TokenType.Pipe }
+                        .Any(token => (char)token == peek))
+                    {
+                        return result;
+                    }
+                }
 
                 switch (_state)
                 {
