@@ -7,9 +7,9 @@
         Pipe = '|',
         Apostrophe = '\'',
         BackSlash = '\\',
+        Dollar = '$',
         EOF = (char)0,
         Terminal = (char)1,
-        NonTerminal = (char)2,
-        Dollar = (char)3
+        NonTerminal = (char)2
     }
 }

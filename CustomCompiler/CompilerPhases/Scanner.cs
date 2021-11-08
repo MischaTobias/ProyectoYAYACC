@@ -33,6 +33,8 @@ namespace CustomCompiler.CompilerPhases
                 if (_index == _regexp.Length - 1) return result;
                 char peek = _regexp[_index];
 
+                if (peek == (char)TokenType.EOF) return result;
+
                 if (result.Tag == TokenType.NonTerminal)
                 {
                     if (new[] { TokenType.SemiColon, TokenType.Apostrophe, TokenType.Colon, TokenType.Pipe }
