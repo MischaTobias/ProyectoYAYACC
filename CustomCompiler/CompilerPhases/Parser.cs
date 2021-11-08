@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using CustomCompiler.Tokens;
+using CustomCompiler.Grammar_Structure;
 using System.Collections.Generic;
 
 namespace CustomCompiler.CompilerPhases
@@ -11,7 +12,7 @@ namespace CustomCompiler.CompilerPhases
         Dictionary<int, Dictionary<string, string>> _lalrTable;
         List<List<string>> _rules;
         Stack<int> _states;
-        Stack<string> _symbols;
+        Stack<Symbol> _symbols;
         Queue<Token> _input;
 
         public Parser()
@@ -140,7 +141,7 @@ namespace CustomCompiler.CompilerPhases
             while ((token = _scanner.GetToken()).Tag != TokenType.EOF) _input.Enqueue(token);
             _input.Enqueue(new Token { Tag = TokenType.Dollar });
             _states.Push(0);
-            _symbols.Push("#");
+            _symbols.Push(new Symbol { SymbolType = "#" }); 
 
 
             while (_input.Count != 0 || _states.Count != 0)
@@ -151,24 +152,107 @@ namespace CustomCompiler.CompilerPhases
                     var action_goto = _lalrTable[_states.Peek()][inputPeek];
                     if (action_goto.Contains("S"))//Shift
                     {
-                        _symbols.Push(inputPeek);
                         _states.Push(Convert.ToInt32(action_goto.Remove(0, 1)));
-                        _input.Dequeue();
+                        _symbols.Push(new Symbol { SymbolType = inputPeek, Tokens = new List<Token> { _input.Dequeue() } });
                     }
                     else if (action_goto.Contains("R"))//Reduce
                     {
-                        var rule = _rules[Convert.ToInt32(action_goto.Remove(0, 1)) - 1];
+                        var ruleNumber = Convert.ToInt32(action_goto.Remove(0, 1));
+                        var rule = _rules[ruleNumber - 1];
                         var productionQty = rule.Count - 1;
+                        List<Token> temp = new();
+                        if (ruleNumber <= 6)
+                        {
+                            var x = 0;
+                        }
                         for (int i = 0; i < productionQty; i++)
                         {
-                            _symbols.Pop();
+                            var prevTokens = _symbols.Pop().Tokens;
+                            foreach (var tokenP in prevTokens) temp.Add(tokenP);
                             _states.Pop();
                         }
-                        _symbols.Push(rule[0]);
+                        _symbols.Push(new Symbol { SymbolType = rule[0], Tokens = temp});
                         _states.Push(Convert.ToInt32(_lalrTable[_states.Peek()][rule[0]]));
                     }
                     else if (action_goto == "ACCEPT")
                     {
+                        var grammarParts = _symbols.Peek().Tokens;
+                        grammarParts.Reverse();
+                        GrammarObj grammar = new();
+                        grammar.InitialState = grammarParts[0].Value;
+                        grammar.Variables = new List<string>();
+                        grammar.Terminals = new List<string>();
+                        grammar.Productions = new List<Production>();
+                        List<List<string>> rules = new();
+                        List<string> newRule = new();
+                        Production newProduction = new();
+                        for (int i = 0; i < grammarParts.Count; i++)
+                        {
+                            var part = grammarParts[i];
+                            if (part.Tag == TokenType.NonTerminal && i + 1 < grammarParts.Count)
+                            {
+                                if (grammarParts[i + 1].Tag == TokenType.Colon)
+                                {
+                                    if (newRule.Count != 0)
+                                    {
+                                        newProduction = new Production { Variable = newRule[0] };
+                                        if (!grammar.Variables.Contains(newRule[0])) grammar.Variables.Add(newRule[0]);
+                                        newRule.RemoveAt(0);
+                                        newRule.RemoveAt(0);
+                                        newProduction.Result = string.Join(" ", newRule);
+                                        grammar.Productions.Add(newProduction);
+                                    }
+                                    newRule = new() { part.Value };
+                                }
+                                else
+                                {
+                                    newRule.Add(GetGrammarPart(part));
+                                    if (part.Tag == TokenType.NonTerminal)
+                                    {
+                                        if (!grammar.Variables.Contains(part.Value))
+                                        {
+                                            grammar.Variables.Add(part.Value);
+                                        }
+                                    }
+                                    else if (part.Tag == TokenType.Terminal)
+                                    {
+                                        if (!grammar.Terminals.Contains(part.Value))
+                                        {
+                                            grammar.Terminals.Add(part.Value);
+                                        }
+                                    }
+                                }
+                            }
+                            else if (part.Tag == TokenType.Pipe)
+                            {
+                                rules.Add(newRule);
+                                newRule = new() { newRule[0], GetGrammarPart(new Token() { Tag = TokenType.Colon }) };
+                            }
+                            else
+                            {
+                                newRule.Add(GetGrammarPart(part));
+                                if (part.Tag == TokenType.NonTerminal)
+                                {
+                                    if (!grammar.Variables.Contains(part.Value))
+                                    {
+                                        grammar.Variables.Add(part.Value);
+                                    }
+                                }
+                                else if (part.Tag == TokenType.Terminal)
+                                {
+                                    if (!grammar.Terminals.Contains(part.Value))
+                                    {
+                                        grammar.Terminals.Add(part.Value);
+                                    }
+                                }
+                            }
+                        }
+                        newProduction = new Production { Variable = newRule[0] };
+                        if (!grammar.Variables.Contains(newRule[0])) grammar.Variables.Add(newRule[0]);
+                        newRule.RemoveAt(0);
+                        newRule.RemoveAt(0);
+                        newProduction.Result = string.Join(" ", newRule);
+                        grammar.Productions.Add(newProduction);
                         return;
                     }
                 }
@@ -192,6 +276,22 @@ namespace CustomCompiler.CompilerPhases
                     return "T";
                 case TokenType.NonTerminal:
                     return "NT";
+            }
+            return "";
+        }
+
+        private static string GetGrammarPart(Token token)
+        {
+            switch (token.Tag)
+            {
+                case TokenType.Colon:
+                case TokenType.SemiColon:
+                case TokenType.Pipe:
+                case TokenType.Dollar:
+                    return new string((char)token.Tag, 1);
+                case TokenType.Terminal:
+                case TokenType.NonTerminal:
+                    return token.Value;
             }
             return "";
         }
