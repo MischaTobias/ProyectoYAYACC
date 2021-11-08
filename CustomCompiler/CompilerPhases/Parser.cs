@@ -3,6 +3,7 @@ using System.IO;
 using CustomCompiler.Tokens;
 using CustomCompiler.Grammar_Structure;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CustomCompiler.CompilerPhases
 {
@@ -130,7 +131,7 @@ namespace CustomCompiler.CompilerPhases
             _lalrTable.Add(14, tempRow);
         }
 
-        public void Parse(string address)
+        public GrammarObj Parse(string address)
         {
             using StreamReader sr = new(address);
             string ln = "";
@@ -183,77 +184,50 @@ namespace CustomCompiler.CompilerPhases
                         grammar.Variables = new List<string>();
                         grammar.Terminals = new List<string>();
                         grammar.Productions = new List<Production>();
-                        List<List<string>> rules = new();
-                        List<string> newRule = new();
-                        Production newProduction = new();
-                        for (int i = 0; i < grammarParts.Count; i++)
+
+                        var variableRules = new List<Token>();
+                        while (grammarParts.Count > 0)
                         {
-                            var part = grammarParts[i];
-                            if (part.Tag == TokenType.NonTerminal && i + 1 < grammarParts.Count)
+                            while (!variableRules.Any(r => r.Tag == TokenType.SemiColon))
                             {
-                                if (grammarParts[i + 1].Tag == TokenType.Colon)
-                                {
-                                    if (newRule.Count != 0)
-                                    {
-                                        newProduction = new Production { Variable = newRule[0] };
-                                        if (!grammar.Variables.Contains(newRule[0])) grammar.Variables.Add(newRule[0]);
-                                        newRule.RemoveAt(0);
-                                        newRule.RemoveAt(0);
-                                        newProduction.Result = string.Join(" ", newRule);
-                                        grammar.Productions.Add(newProduction);
-                                    }
-                                    newRule = new() { part.Value };
-                                }
-                                else
-                                {
-                                    newRule.Add(GetGrammarPart(part));
-                                    if (part.Tag == TokenType.NonTerminal)
-                                    {
-                                        if (!grammar.Variables.Contains(part.Value))
-                                        {
-                                            grammar.Variables.Add(part.Value);
-                                        }
-                                    }
-                                    else if (part.Tag == TokenType.Terminal)
-                                    {
-                                        if (!grammar.Terminals.Contains(part.Value))
-                                        {
-                                            grammar.Terminals.Add(part.Value);
-                                        }
-                                    }
-                                }
+                                variableRules.Add(grammarParts[0]);
+                                grammarParts.RemoveAt(0);
                             }
-                            else if (part.Tag == TokenType.Pipe)
+
+                            var nonTerminal = variableRules[0];
+                            variableRules.RemoveAt(0);
+                            variableRules.RemoveAt(0);
+
+                            List<Token> newRule;
+                            while (variableRules.Count > 0)
                             {
-                                rules.Add(newRule);
-                                newRule = new() { newRule[0], GetGrammarPart(new Token() { Tag = TokenType.Colon }) };
-                            }
-                            else
-                            {
-                                newRule.Add(GetGrammarPart(part));
-                                if (part.Tag == TokenType.NonTerminal)
+                                newRule = new();
+                                while (!newRule.Any(r => r.Tag == TokenType.Pipe || r.Tag == TokenType.SemiColon))
                                 {
-                                    if (!grammar.Variables.Contains(part.Value))
-                                    {
-                                        grammar.Variables.Add(part.Value);
-                                    }
+                                    newRule.Add(variableRules[0]);
+                                    variableRules.RemoveAt(0);
                                 }
-                                else if (part.Tag == TokenType.Terminal)
+
+                                newRule.RemoveAt(newRule.Count - 1);
+                                var newProduction = new Production { Variable = nonTerminal.Value };
+                                newProduction.Result = string.Join(" ", newRule.Select(item => item.Value));
+                                grammar.Productions.Add(newProduction);
+
+
+                                foreach (var item in newRule)
                                 {
-                                    if (!grammar.Terminals.Contains(part.Value))
+                                    if (item.Tag == TokenType.Terminal)
                                     {
-                                        grammar.Terminals.Add(part.Value);
+                                        if (!grammar.Terminals.Contains(item.Value)) grammar.Terminals.Add(item.Value);
+                                    }
+                                    else if (item.Tag == TokenType.NonTerminal)
+                                    {
+                                        if (!grammar.Variables.Contains(item.Value)) grammar.Variables.Add(item.Value);
                                     }
                                 }
                             }
                         }
-                        newProduction = new Production { Variable = newRule[0] };
-                        if (!grammar.Variables.Contains(newRule[0])) grammar.Variables.Add(newRule[0]);
-                        newRule.RemoveAt(0);
-                        newRule.RemoveAt(0);
-                        newProduction.Result = string.Join(" ", newRule);
-                        grammar.Productions.Add(newProduction);
-                        return;
+                        return grammar;
                     }
                 }
                 catch
@@ -261,6 +235,7 @@ namespace CustomCompiler.CompilerPhases
                     throw new Exception("Acción no encontrada en tabla. Parse Error.");
                 }
             }
+            return new GrammarObj();
         }
 
         private static string GetKey(Token token)

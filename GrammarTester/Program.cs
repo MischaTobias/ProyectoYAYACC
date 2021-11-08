@@ -12,8 +12,7 @@ namespace GrammarTester
             Console.WriteLine("Ingrese la dirección del archivo");
             var address = Path.GetFullPath(Console.ReadLine());
             Parser parser = new();
-            parser.Parse(address);
-            Console.WriteLine("Expresión OK");
+            Console.WriteLine(parser.Parse(address).GetString());
             Console.ReadLine();
         }
     }
