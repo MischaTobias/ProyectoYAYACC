@@ -39,9 +39,9 @@ namespace CustomCompiler.Generator
             sw.WriteLine(WS("{"));
             _prevIndentation += '\t';
 
-            sw.WriteLine(WS("EOF = (char) 0,"));
-            sw.WriteLine(WS("Terminal = (char) 1,"));
-            sw.WriteLine(WS("NonTerminal = (char) 2"));
+            sw.WriteLine(WS("EOF = (char)0,"));
+            sw.WriteLine(WS("Terminal = (char)1,"));
+            sw.WriteLine(WS("NonTerminal = (char)2"));
 
             //Fin TokenType
             _prevIndentation = _prevIndentation[1..];
@@ -53,20 +53,30 @@ namespace CustomCompiler.Generator
             sw.WriteLine(WS("{"));
             _prevIndentation += '\t';
 
-            sw.WriteLine(WS("public TokenType Tag;")); ;
-            sw.WriteLine(WS("public string Value;")); ;
+            sw.WriteLine(WS("public TokenType Tag;"));
+            sw.WriteLine(WS("public string Value;"));
 
             //Fin Token
             _prevIndentation = _prevIndentation[1..];
             sw.WriteLine(WS("}"));
             sw.WriteLine();
 
-
             //Inicio Lexer
+            sw.WriteLine(WS("public class Scanner"));
+            sw.WriteLine(WS("{"));
+            _prevIndentation += '\t';
+
+            sw.WriteLine(WS("private readonly string _regexp = \"\";"));
+            sw.WriteLine(WS("private int _index = 0;"));
+            sw.WriteLine(WS("private int _state = 0;"));
+
+            //Fin Lexer
+            _prevIndentation = _prevIndentation[1..];
+            sw.WriteLine(WS("}"));
+
             //Fin namespace
             _prevIndentation = _prevIndentation[1..];
             sw.WriteLine(WS("}"));
-            sw.WriteLine();
         }
     }
 }

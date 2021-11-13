@@ -7,7 +7,7 @@ namespace CustomCompiler.CompilerPhases
 {
     public class Scanner
     {
-        private string _regexp = "";
+        private readonly string _regexp = "";
         private int _index = 0;
         private int _state = 0;
 

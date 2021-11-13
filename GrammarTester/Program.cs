@@ -15,9 +15,9 @@ namespace GrammarTester
                 var address = Path.GetFullPath(Console.ReadLine());
                 Parser parser = new();
                 var grammarResult = parser.Parse(address);
+                Console.WriteLine(grammarResult.GetString());
                 LexerGenerator generator = new(address);
                 generator.WriteLexer(grammarResult);
-                Console.WriteLine(grammarResult.GetString());
             }
             catch (Exception ex)
             {
