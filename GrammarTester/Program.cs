@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using CustomCompiler.CompilerPhases;
-using CustomCompiler.Tokens;
+using CustomCompiler.Generator;
 
 namespace GrammarTester
 {
@@ -9,10 +9,21 @@ namespace GrammarTester
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Ingrese la dirección del archivo");
-            var address = Path.GetFullPath(Console.ReadLine());
-            Parser parser = new();
-            Console.WriteLine(parser.Parse(address).GetString());
+            try
+            {
+                Console.WriteLine("Ingrese la dirección del archivo");
+                var address = Path.GetFullPath(Console.ReadLine());
+                Parser parser = new();
+                var grammarResult = parser.Parse(address);
+                LexerGenerator generator = new(address);
+                generator.WriteLexer(grammarResult);
+                Console.WriteLine(grammarResult.GetString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            
             Console.ReadLine();
         }
     }

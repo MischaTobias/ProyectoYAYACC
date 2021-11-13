@@ -9,12 +9,12 @@ namespace CustomCompiler.CompilerPhases
 {
     public class Parser
     {
-        Scanner _scanner;
-        Dictionary<int, Dictionary<string, string>> _lalrTable;
-        List<List<string>> _rules;
-        Stack<int> _states;
-        Stack<Symbol> _symbols;
-        Queue<Token> _input;
+        private Scanner _scanner;
+        private Dictionary<int, Dictionary<string, string>> _lalrTable;
+        private List<List<string>> _rules;
+        private Stack<int> _states;
+        private Stack<Symbol> _symbols;
+        private Queue<Token> _input;
 
         public Parser()
         {
@@ -162,10 +162,6 @@ namespace CustomCompiler.CompilerPhases
                         var rule = _rules[ruleNumber - 1];
                         var productionQty = rule.Count - 1;
                         List<Token> temp = new();
-                        if (ruleNumber <= 6)
-                        {
-                            var x = 0;
-                        }
                         for (int i = 0; i < productionQty; i++)
                         {
                             var prevTokens = _symbols.Pop().Tokens;
@@ -251,22 +247,6 @@ namespace CustomCompiler.CompilerPhases
                     return "T";
                 case TokenType.NonTerminal:
                     return "NT";
-            }
-            return "";
-        }
-
-        private static string GetGrammarPart(Token token)
-        {
-            switch (token.Tag)
-            {
-                case TokenType.Colon:
-                case TokenType.SemiColon:
-                case TokenType.Pipe:
-                case TokenType.Dollar:
-                    return new string((char)token.Tag, 1);
-                case TokenType.Terminal:
-                case TokenType.NonTerminal:
-                    return token.Value;
             }
             return "";
         }
