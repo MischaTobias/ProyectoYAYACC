@@ -101,6 +101,7 @@ namespace CustomCompiler.CompilerPhases
                             case (char)TokenType.BackSlash:
                             case (char)TokenType.Apostrophe:
                             case 'n':
+                            case 's':
                             case 't':
                                 result.Value += peek;
                                 _state = 2;

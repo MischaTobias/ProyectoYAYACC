@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31729.503
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GrammarTester", "GrammarTester\GrammarTester.csproj", "{8B062C9D-E7FE-41D9-AB45-D5DCE1713A1B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GrammarTester", "GrammarTester\GrammarTester.csproj", "{8B062C9D-E7FE-41D9-AB45-D5DCE1713A1B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomCompiler", "CustomCompiler\CustomCompiler.csproj", "{2985EF17-350B-45AD-B108-153ABE15A68D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CustomCompiler", "CustomCompiler\CustomCompiler.csproj", "{2985EF17-350B-45AD-B108-153ABE15A68D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewGrammarTester", "NewGrammarTester\NewGrammarTester.csproj", "{DA563053-435C-4C7C-BBEE-5C523819541E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{2985EF17-350B-45AD-B108-153ABE15A68D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2985EF17-350B-45AD-B108-153ABE15A68D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2985EF17-350B-45AD-B108-153ABE15A68D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA563053-435C-4C7C-BBEE-5C523819541E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA563053-435C-4C7C-BBEE-5C523819541E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA563053-435C-4C7C-BBEE-5C523819541E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA563053-435C-4C7C-BBEE-5C523819541E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
