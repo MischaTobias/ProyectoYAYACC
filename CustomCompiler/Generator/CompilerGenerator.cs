@@ -15,6 +15,10 @@ namespace CustomCompiler.Generator
         private readonly GrammarObj _currentGrammar;
         private StreamWriter _sw;
         private string _prevIndentation;
+        private int _newStateNumber;
+        private List<Production> _tempRuleList;
+        private List<GraphNode> _LR0Graph;
+
         private string WS(string line) => $"{_prevIndentation}{line}";
 
         public CompilerGenerator(string address, GrammarObj grammar)
@@ -228,8 +232,11 @@ namespace CustomCompiler.Generator
 
         private void GenerateLR0()
         {
-            var graph = new List<GraphNode>();
-            var tempRuleList = new List<Production>
+            _LR0Graph = new List<GraphNode>();
+
+            _newStateNumber = 0;
+
+            _tempRuleList = new List<Production>
             {
                 new Production 
                 {
@@ -238,29 +245,79 @@ namespace CustomCompiler.Generator
                 }
             };
 
-            var firstNode = new GraphNode();
+            GenerateNewState(_tempRuleList);
 
-            while (tempRuleList.Count != 0)
+            var x = 0;
+        }
+
+        private void GenerateNewState(List<Production> kernelProductions)
+        {
+            _tempRuleList = new List<Production>();
+            _tempRuleList.AddRange(kernelProductions);
+
+            var newNode = new GraphNode();
+
+            while (_tempRuleList.Count != 0)
             {
-                //$"{ production.Variable } → •{ production.Result }"
-                var production = tempRuleList[0];
-                tempRuleList.RemoveAt(0);
+                var production = _tempRuleList[0];
+                _tempRuleList.RemoveAt(0);
 
-                production.Result.Insert(0, new Token { Tag = TokenType.Dot });
-                var nextToken = production.Result[1];
-
-                firstNode.Rules.Add(production);
-
-                if (nextToken.Tag == TokenType.NonTerminal)
+                if (!production.Result.Any(t => t.Tag == TokenType.Dot))
                 {
-                    if (!tempRuleList.Any(p => p.Variable.Value == nextToken.Value) && !firstNode.Rules.Any(p => p.Variable.Value == nextToken.Value))
+                    production.Result.Insert(0, new Token { Tag = TokenType.Dot });
+                }
+
+                newNode.Rules.Add(production);
+
+                var nextTokenIndex = production.Result.FindIndex(t => t.Tag == TokenType.Dot) + 1;
+
+                if (nextTokenIndex < production.Result.Count)
+                {
+                    var nextToken = production.Result[nextTokenIndex];
+
+                    if (nextToken.Tag == TokenType.NonTerminal)
                     {
-                        tempRuleList.AddRange(_currentGrammar.Productions.Where(p => p.Variable.Value == nextToken.Value));
+                        if (!GraphNode.RuleExists(_tempRuleList, newNode, nextToken))
+                        {
+                            _tempRuleList.AddRange(_currentGrammar.Productions.Where(p => p.Variable.Value == nextToken.Value));
+                        }
                     }
                 }
             }
 
-            var x = 0;
+            var nextCharacters = new Dictionary<Token, List<Production>>();
+            foreach (var prod in newNode.Rules)
+            {
+                var newProd = new Production
+                {
+                    Variable = prod.Variable,
+                };
+
+                prod.Result.ForEach(t => newProd.Result.Add(t));
+
+                var dotPosition = newProd.Result.FindIndex(t => t.Tag == TokenType.Dot);
+                if (dotPosition < newProd.Result.Count - 1)
+                {
+                    var nextCharacter = newProd.Result[dotPosition + 1];
+                    newProd.Result.Reverse(dotPosition, 2);
+
+                    if (nextCharacters.ContainsKey(nextCharacter))
+                    {
+                        nextCharacters[nextCharacter].Add(newProd);
+                    }
+                    else
+                    {
+                        nextCharacters.Add(nextCharacter, new List<Production> { newProd });
+                    }
+                }
+            }
+
+            _LR0Graph.Add(newNode);
+
+            foreach (var prod in nextCharacters)
+            {
+                GenerateNewState(prod.Value);
+            }
         }
     }
 }
