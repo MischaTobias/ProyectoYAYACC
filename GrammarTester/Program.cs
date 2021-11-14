@@ -16,8 +16,8 @@ namespace GrammarTester
                 Parser parser = new();
                 var grammarResult = parser.Parse(address);
                 Console.WriteLine(grammarResult.GetString());
-                LexerGenerator generator = new(address);
-                generator.WriteLexer(grammarResult);
+                CompilerGenerator generator = new(address, grammarResult);
+                generator.GenerateCompiler();
             }
             catch (Exception ex)
             {
