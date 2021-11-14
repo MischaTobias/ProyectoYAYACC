@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using CustomCompiler.Tokens;
+using System.Collections.Generic;
 
 namespace CustomCompiler.Grammar_Structure
 {
@@ -27,9 +28,34 @@ namespace CustomCompiler.Grammar_Structure
             resultString += "Productions:\n";
             foreach (var production in Productions)
             {
-                resultString += $"\t{production.Variable} -> {production.Result} \n";
+                resultString += $"\t{production.Variable.Value} ->";
+                production.Result.ForEach(t =>
+                {
+                    resultString += $" {t.Value}";
+                });
+                resultString += "\n";
             }
             return resultString;
+        }
+
+        public GrammarObj GenerateExtendedGrammar()
+        {
+            var exGrammarProduction = new Production 
+            {
+                Variable = new Token
+                {
+                    Value = Productions[0].Variable.Value + "'",
+                    Tag = Productions[0].Variable.Tag
+                },
+
+                Result = new List<Token>()
+                {
+                    Productions[0].Variable
+                }
+            };
+
+            Productions.Insert(0, exGrammarProduction);
+            return this;
         }
     }
 }

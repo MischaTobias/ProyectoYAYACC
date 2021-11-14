@@ -205,8 +205,8 @@ namespace CustomCompiler.CompilerPhases
                                 }
 
                                 newRule.RemoveAt(newRule.Count - 1);
-                                var newProduction = new Production { Variable = nonTerminal.Value };
-                                newProduction.Result = string.Join(" ", newRule.Select(item => item.Value));
+                                var newProduction = new Production { Variable = nonTerminal };
+                                newProduction.Result.AddRange(newRule);
                                 grammar.Productions.Add(newProduction);
 
 

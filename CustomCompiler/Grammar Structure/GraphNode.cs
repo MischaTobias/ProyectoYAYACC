@@ -1,10 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using CustomCompiler.Tokens;
+using System.Collections.Generic;
 
 namespace CustomCompiler.Grammar_Structure
 {
-    internal struct GraphNode
+    public class GraphNode
     {
-        List<string> Rules;
-        List<int> SharingNodes;
+        public List<Production> Rules = new();
+        public List<int> SharingNodes = new();
+        public bool Finished = false;
     }
 }

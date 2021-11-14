@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CustomCompiler.Grammar_Structure;
+using CustomCompiler.Tokens;
 
 namespace CustomCompiler.Generator
 {
@@ -21,7 +22,7 @@ namespace CustomCompiler.Generator
             _newParserAddress = Path.GetDirectoryName(address);
             _newFileFullAddress = $"{_newParserAddress}\\{_newFileName}";
             _prevIndentation = string.Empty;
-            _currentGrammar = grammar;
+            _currentGrammar = grammar.GenerateExtendedGrammar();
         }
 
         private void WriteNewArea(StreamWriter sw, string newArea)
@@ -42,7 +43,7 @@ namespace CustomCompiler.Generator
         {
             foreach (var nonTerminal in _currentGrammar.Variables)
             {
-                if (!_currentGrammar.Productions.Any(p => p.Variable == nonTerminal))
+                if (!_currentGrammar.Productions.Any(p => p.Variable.Value == nonTerminal))
                 {
                     throw new Exception($"Variable { nonTerminal } doesn't have a production");
                 }
@@ -78,6 +79,8 @@ namespace CustomCompiler.Generator
 
                 //Console Program
                 WriteConsoleProgram();
+
+                GenerateLR0();
 
                 //Fin namespace
                 EndArea(_sw);
@@ -223,9 +226,41 @@ namespace CustomCompiler.Generator
             EndArea(_sw);
         }
 
-        private void GenerateLALRTable()
+        private void GenerateLR0()
         {
             var graph = new List<GraphNode>();
+            var tempRuleList = new List<Production>
+            {
+                new Production 
+                {
+                    Variable = _currentGrammar.Productions[0].Variable,
+                    Result = _currentGrammar.Productions[0].Result
+                }
+            };
+
+            var firstNode = new GraphNode();
+
+            while (tempRuleList.Count != 0)
+            {
+                //$"{ production.Variable } → •{ production.Result }"
+                var production = tempRuleList[0];
+                tempRuleList.RemoveAt(0);
+
+                production.Result.Insert(0, new Token { Tag = TokenType.Dot });
+                var nextToken = production.Result[1];
+
+                firstNode.Rules.Add(production);
+
+                if (nextToken.Tag == TokenType.NonTerminal)
+                {
+                    if (!tempRuleList.Any(p => p.Variable.Value == nextToken.Value) && !firstNode.Rules.Any(p => p.Variable.Value == nextToken.Value))
+                    {
+                        tempRuleList.AddRange(_currentGrammar.Productions.Where(p => p.Variable.Value == nextToken.Value));
+                    }
+                }
+            }
+
+            var x = 0;
         }
     }
 }

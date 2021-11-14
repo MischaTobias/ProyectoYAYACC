@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using CustomCompiler.Tokens;
+using System.Collections.Generic;
 
 namespace CustomCompiler.Grammar_Structure
 {
-    public struct Production
+    public class Production
     {
-        public string Variable { get; set; }
-        public string Result { get; set; }
+        public Token Variable { get; set; }
+        public List<Token> Result = new();
     }
 }

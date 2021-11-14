@@ -10,6 +10,7 @@
         Dollar = '$',
         EOF = (char)0,
         Terminal = (char)1,
-        NonTerminal = (char)2
+        NonTerminal = (char)2,
+        Dot = '•'
     }
 }
