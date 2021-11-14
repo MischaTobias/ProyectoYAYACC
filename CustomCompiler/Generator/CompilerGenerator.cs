@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using CustomCompiler.Grammar_Structure;
 
 namespace CustomCompiler.Generator
@@ -36,12 +38,25 @@ namespace CustomCompiler.Generator
             sw.WriteLine();
         }
 
+        private void CheckNonTerminals()
+        {
+            foreach (var nonTerminal in _currentGrammar.Variables)
+            {
+                if (!_currentGrammar.Productions.Any(p => p.Variable == nonTerminal))
+                {
+                    throw new Exception($"Variable { nonTerminal } doesn't have a production");
+                }
+            }
+        }
+
         public void GenerateCompiler()
         {
             if (File.Exists(_newFileFullAddress))
             {
                 File.Delete(_newFileFullAddress);
             }
+
+            CheckNonTerminals();
 
             try
             {
@@ -206,6 +221,11 @@ namespace CustomCompiler.Generator
 
             //Fin Lexer
             EndArea(_sw);
+        }
+
+        private void GenerateLALRTable()
+        {
+            var graph = new List<GraphNode>();
         }
     }
 }
