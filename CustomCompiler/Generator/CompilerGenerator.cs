@@ -15,9 +15,10 @@ namespace CustomCompiler.Generator
         private readonly GrammarObj _currentGrammar;
         private StreamWriter _sw;
         private string _prevIndentation;
-        private int _newStateNumber;
         private List<Production> _tempRuleList;
         private List<GraphNode> _LR0Graph;
+        private Dictionary<Token, List<Token>> _firsts;
+        private Dictionary<Token, List<Token>> _follows;
 
         private string WS(string line) => $"{_prevIndentation}{line}";
 
@@ -47,7 +48,7 @@ namespace CustomCompiler.Generator
         {
             foreach (var nonTerminal in _currentGrammar.Variables)
             {
-                if (!_currentGrammar.Productions.Any(p => p.Variable.Value == nonTerminal))
+                if (!_currentGrammar.Productions.Any(p => p.Variable.Value == nonTerminal.Value))
                 {
                     throw new Exception($"Variable { nonTerminal } doesn't have a production");
                 }
@@ -84,7 +85,12 @@ namespace CustomCompiler.Generator
                 //Console Program
                 WriteConsoleProgram();
 
+                //LR 0
+                _currentGrammar.GenerateFirsts();
                 GenerateLR0();
+
+                //LALR 1
+                GenerateLALR();
 
                 //Fin namespace
                 EndArea(_sw);
@@ -234,8 +240,6 @@ namespace CustomCompiler.Generator
         {
             _LR0Graph = new List<GraphNode>();
 
-            _newStateNumber = 0;
-
             _tempRuleList = new List<Production>
             {
                 new Production 
@@ -246,7 +250,56 @@ namespace CustomCompiler.Generator
             };
 
             GenerateNewState(_tempRuleList);
+        }
 
+        private void GenerateLALR()
+        {
+            _LR0Graph[0].Rules[0].LookAhead = new List<Token> { new Token { Tag = TokenType.Dollar } };
+            ModifyStateLookAhead(_LR0Graph[0]);
+        }
+
+        private void ModifyStateLookAhead(GraphNode node)
+        {
+            foreach (var rule in node.Rules)
+            {
+                var nextTokenIndex = rule.Result.FindIndex(t => t.Tag == TokenType.Dot) + 1;
+                if (nextTokenIndex < rule.Result.Count)
+                {
+                    var nextToken = rule.Result[nextTokenIndex];
+                    if (nextToken.Tag == TokenType.NonTerminal)
+                    {
+                        List<Token> lookAhead;
+                        var lookAheadTokenIndex = nextTokenIndex + 1;
+                        if (lookAheadTokenIndex < rule.Result.Count)
+                        {
+                            var lookAheadToken = rule.Result[lookAheadTokenIndex];
+                            if (lookAheadToken.Tag == TokenType.NonTerminal)
+                            {
+                                lookAhead = _currentGrammar.FirstList[lookAheadToken];
+                            }
+                            else
+                            {
+                                lookAhead = new List<Token> { lookAheadToken };
+                            }
+                        }
+                        else
+                        {
+                            lookAhead = rule.LookAhead;
+                        }
+
+                        node.Rules.ForEach(p =>
+                        {
+                            if (p.Variable.Value == nextToken.Value)
+                            {
+                                p.LookAhead.AddRange(lookAhead);
+                                p.LookAhead = p.LookAhead.Distinct().ToList();
+                            }
+                        });
+                    }
+                }
+            }
+
+            //mandar a los demás nodos
             var x = 0;
         }
 
@@ -316,8 +369,32 @@ namespace CustomCompiler.Generator
 
             foreach (var prod in nextCharacters)
             {
-                GenerateNewState(prod.Value);
+                if (!AlreadyExists(prod.Value))
+                {
+                    GenerateNewState(prod.Value);
+                }
             }
+        }
+
+        private bool AlreadyExists(List<Production> productions)
+        {
+            bool exists;
+
+            foreach (var node in _LR0Graph)
+            {
+                if (node.Rules.Count >= productions.Count)
+                {
+                    exists = true;
+                    for (int i = 0; i < productions.Count; i++)
+                    {
+                        exists = exists && Production.CompareProductionResult(productions[i], node.Rules[i]);
+                        if (!exists) break;
+                    }
+                    if (exists) return true;
+                }
+            }
+
+            return false;
         }
     }
 }

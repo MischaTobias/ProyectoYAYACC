@@ -176,9 +176,9 @@ namespace CustomCompiler.CompilerPhases
                         var grammarParts = _symbols.Peek().Tokens;
                         grammarParts.Reverse();
                         GrammarObj grammar = new();
-                        grammar.InitialState = grammarParts[0].Value;
-                        grammar.Variables = new List<string>();
-                        grammar.Terminals = new List<string>();
+                        grammar.InitialVariable = grammarParts[0].Value;
+                        grammar.Variables = new List<Token>();
+                        grammar.Terminals = new List<Token>();
                         grammar.Productions = new List<Production>();
 
                         var variableRules = new List<Token>();
@@ -214,11 +214,11 @@ namespace CustomCompiler.CompilerPhases
                                 {
                                     if (item.Tag == TokenType.Terminal)
                                     {
-                                        if (!grammar.Terminals.Contains(item.Value)) grammar.Terminals.Add(item.Value);
+                                        if (!grammar.Terminals.Contains(item)) grammar.Terminals.Add(item);
                                     }
                                     else if (item.Tag == TokenType.NonTerminal)
                                     {
-                                        if (!grammar.Variables.Contains(item.Value)) grammar.Variables.Add(item.Value);
+                                        if (!grammar.Variables.Contains(item)) grammar.Variables.Add(item);
                                     }
                                 }
                             }
