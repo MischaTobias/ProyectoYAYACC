@@ -64,8 +64,8 @@ namespace CustomCompiler.Generator
 
             CheckNonTerminals();
 
-            //try
-            //{
+            try
+            {
                 _sw = new(_newFileFullAddress);
                 _sw.WriteLine(WS("using System;"));
                 _sw.WriteLine(WS("using System.IO;"));
@@ -96,12 +96,12 @@ namespace CustomCompiler.Generator
                 EndArea(_sw);
 
                 _sw.Close();
-            //}
-            //catch (Exception ex)
-            //{
-            //    _sw.Close();
-            //    throw new Exception(ex.Message);
-            //}
+            }
+            catch (Exception ex)
+            {
+                _sw.Close();
+                throw new Exception(ex.Message);
+            }
         }
 
         private void WriteTokenType()
@@ -260,6 +260,8 @@ namespace CustomCompiler.Generator
 
         private void ModifyStateLookAhead(GraphNode node)
         {
+            var nextNodes = new Dictionary<int, List<Production>>();
+
             foreach (var rule in node.Rules)
             {
                 var nextTokenIndex = rule.Result.FindIndex(t => t.Tag == TokenType.Dot) + 1;
@@ -287,20 +289,60 @@ namespace CustomCompiler.Generator
                             lookAhead = rule.LookAhead;
                         }
 
-                        node.Rules.ForEach(p =>
+                        foreach (var nodeRule in node.Rules)
                         {
-                            if (p.Variable.Value == nextToken.Value)
+                            if (nodeRule.Variable.Value == nextToken.Value)
                             {
-                                p.LookAhead.AddRange(lookAhead);
-                                p.LookAhead = p.LookAhead.Distinct().ToList();
+                                foreach (var token in lookAhead)
+                                {
+                                    if (!nodeRule.LookAhead.Contains(token))
+                                    {
+                                        nodeRule.LookAhead.Add(token);
+                                    }
+                                }
                             }
-                        });
+                        }
+                    }
+                }
+
+                if (rule.NextState != -1)
+                {
+                    if (nextNodes.ContainsKey(rule.NextState))
+                    {
+                        nextNodes[rule.NextState].Add(rule);
+                    }
+                    else
+                    {
+                        nextNodes.Add(rule.NextState, new List<Production> { rule });
                     }
                 }
             }
 
-            //mandar a los demás nodos
-            var x = 0;
+            foreach (var state in nextNodes)
+            {
+                var compProdList = new List<Production>();
+                foreach (var prod in state.Value)
+                {
+                    var newProd = new Production
+                    {
+                        Variable = prod.Variable,
+                        LookAhead = prod.LookAhead
+                    };
+
+                    prod.Result.ForEach(t => newProd.Result.Add(t));
+
+                    var dotPosition = newProd.Result.FindIndex(t => t.Tag == TokenType.Dot);
+                    var nextCharacter = newProd.Result[dotPosition + 1];
+                    newProd.Result.Reverse(dotPosition, 2);
+                    compProdList.Add(newProd);
+                }
+
+                if (!_LR0Graph[state.Key].LookAheadIsTheSame(compProdList))
+                {
+                    _LR0Graph[state.Key].ChangeLookAheadForRules(compProdList);
+                    ModifyStateLookAhead(_LR0Graph[state.Key]);
+                }
+            }
         }
 
         private int GenerateNewState(List<Production> kernelProductions)
