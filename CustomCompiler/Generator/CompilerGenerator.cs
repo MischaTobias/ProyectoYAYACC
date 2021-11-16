@@ -64,8 +64,8 @@ namespace CustomCompiler.Generator
 
             CheckNonTerminals();
 
-            try
-            {
+            //try
+            //{
                 _sw = new(_newFileFullAddress);
                 _sw.WriteLine(WS("using System;"));
                 _sw.WriteLine(WS("using System.IO;"));
@@ -96,12 +96,12 @@ namespace CustomCompiler.Generator
                 EndArea(_sw);
 
                 _sw.Close();
-            }
-            catch (Exception ex)
-            {
-                _sw.Close();
-                throw new Exception(ex.Message);
-            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    _sw.Close();
+            //    throw new Exception(ex.Message);
+            //}
         }
 
         private void WriteTokenType()
@@ -303,12 +303,29 @@ namespace CustomCompiler.Generator
             var x = 0;
         }
 
-        private void GenerateNewState(List<Production> kernelProductions)
+        private int GenerateNewState(List<Production> kernelProductions)
         {
             _tempRuleList = new List<Production>();
-            _tempRuleList.AddRange(kernelProductions);
+            foreach (var prod in kernelProductions)
+            {
+                var newProd = new Production
+                {
+                    Variable = prod.Variable,
+                };
 
-            var newNode = new GraphNode();
+                prod.Result.ForEach(t => newProd.Result.Add(t));
+
+                var dotPosition = newProd.Result.FindIndex(t => t.Tag == TokenType.Dot);
+                if (dotPosition != -1)
+                {
+                    var nextCharacter = newProd.Result[dotPosition + 1];
+                    newProd.Result.Reverse(dotPosition, 2);
+                }
+                _tempRuleList.Add(newProd);
+            }
+
+            var newNode = new GraphNode() { NodeNumber = _LR0Graph.Count };
+            var nextTokens = new Dictionary<Token, List<Production>>();
 
             while (_tempRuleList.Count != 0)
             {
@@ -327,6 +344,14 @@ namespace CustomCompiler.Generator
                 if (nextTokenIndex < production.Result.Count)
                 {
                     var nextToken = production.Result[nextTokenIndex];
+                    if (nextTokens.ContainsKey(nextToken))
+                    {
+                        nextTokens[nextToken].Add(production);
+                    }
+                    else
+                    {
+                        nextTokens.Add(nextToken, new List<Production> { production });
+                    }
 
                     if (nextToken.Tag == TokenType.NonTerminal)
                     {
@@ -338,8 +363,29 @@ namespace CustomCompiler.Generator
                 }
             }
 
-            var nextCharacters = new Dictionary<Token, List<Production>>();
-            foreach (var prod in newNode.Rules)
+            _LR0Graph.Add(newNode);
+
+            foreach (var prod in nextTokens)
+            {
+                var stateNumber = AlreadyExists(prod.Value);
+                if (stateNumber == -1)
+                {
+                    stateNumber = GenerateNewState(prod.Value); //Obtener estado
+                }
+
+                foreach (var production in prod.Value)
+                {
+                    newNode.AssignNumberToRule(stateNumber, production);
+                }
+            }
+
+            return newNode.NodeNumber;
+        }
+
+        private int AlreadyExists(List<Production> productions)
+        {
+            var compProdList = new List<Production>();
+            foreach (var prod in productions)
             {
                 var newProd = new Production
                 {
@@ -349,52 +395,27 @@ namespace CustomCompiler.Generator
                 prod.Result.ForEach(t => newProd.Result.Add(t));
 
                 var dotPosition = newProd.Result.FindIndex(t => t.Tag == TokenType.Dot);
-                if (dotPosition < newProd.Result.Count - 1)
-                {
-                    var nextCharacter = newProd.Result[dotPosition + 1];
-                    newProd.Result.Reverse(dotPosition, 2);
-
-                    if (nextCharacters.ContainsKey(nextCharacter))
-                    {
-                        nextCharacters[nextCharacter].Add(newProd);
-                    }
-                    else
-                    {
-                        nextCharacters.Add(nextCharacter, new List<Production> { newProd });
-                    }
-                }
+                var nextCharacter = newProd.Result[dotPosition + 1];
+                newProd.Result.Reverse(dotPosition, 2);
+                compProdList.Add(newProd);
             }
-
-            _LR0Graph.Add(newNode);
-
-            foreach (var prod in nextCharacters)
-            {
-                if (!AlreadyExists(prod.Value))
-                {
-                    GenerateNewState(prod.Value);
-                }
-            }
-        }
-
-        private bool AlreadyExists(List<Production> productions)
-        {
             bool exists;
 
             foreach (var node in _LR0Graph)
             {
-                if (node.Rules.Count >= productions.Count)
+                if (node.Rules.Count >= compProdList.Count)
                 {
                     exists = true;
-                    for (int i = 0; i < productions.Count; i++)
+                    for (int i = 0; i < compProdList.Count; i++)
                     {
-                        exists = exists && Production.CompareProductionResult(productions[i], node.Rules[i]);
+                        exists = exists && Production.CompareProductionResult(compProdList[i], node.Rules[i]);
                         if (!exists) break;
                     }
-                    if (exists) return true;
+                    if (exists) return node.NodeNumber;
                 }
             }
 
-            return false;
+            return -1;
         }
     }
 }

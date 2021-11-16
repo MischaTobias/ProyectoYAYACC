@@ -6,6 +6,7 @@ namespace CustomCompiler.Grammar_Structure
 {
     public class GraphNode
     {
+        public int NodeNumber = -1;
         public List<Production> Rules = new();
         public Dictionary<Production, int> SharingNodes = new();
         public bool Finished = false;
@@ -32,6 +33,29 @@ namespace CustomCompiler.Grammar_Structure
             }
 
             return existsInTempList || existsInNewNode;
+        }
+
+        public void AssignNumberToRule(int nodeNumber, Production prod)
+        {
+            bool isTheSame;
+            foreach (var rule in Rules)
+            {
+                isTheSame = true;
+                if (rule.Result.Count == prod.Result.Count)
+                {
+                    for (int i = 0; i < rule.Result.Count; i++)
+                    {
+                        isTheSame = isTheSame && rule.Result[i].Value == prod.Result[i].Value;
+                        if (!isTheSame) break;
+                    }
+
+                    if (isTheSame)
+                    {
+                        rule.NextState = nodeNumber;
+                        return;
+                    }
+                }
+            }
         }
 
         public void GenerateLookAheads()
