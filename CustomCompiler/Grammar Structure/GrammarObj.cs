@@ -93,5 +93,34 @@ namespace CustomCompiler.Grammar_Structure
             }
             FirstList.Add(token, tokenList.Distinct().ToList());
         }
+
+        public void PrepareRules()
+        {
+            foreach (var rule in Productions)
+            {
+                rule.Result.Remove(new Token { Tag = TokenType.Dot });
+            }
+        }
+
+        public int GetRuleIndex(Production prod)
+        {
+            prod.Result.Remove(new Token { Tag = TokenType.Dot });
+
+            bool isTheSame;
+            for (int i = 0; i < Productions.Count; i++)
+            {
+                isTheSame = true;
+                if (Productions[i].Result.Count == prod.Result.Count)
+                {
+                    for (int j = 0; j < Productions[i].Result.Count; j++)
+                    {
+                        isTheSame = isTheSame && Productions[i].Result[j].Value == prod.Result[j].Value;
+                        if (!isTheSame) break;
+                    }
+                    if (isTheSame) return i;
+                }
+            }
+            return -1;
+        }
     }
 }

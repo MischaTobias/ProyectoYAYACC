@@ -44,13 +44,6 @@ namespace CustomCompiler.Generator
             sw.WriteLine();
         }
 
-        private void EndObject(StreamWriter sw)
-        {
-            _prevIndentation = _prevIndentation[1..];
-            sw.WriteLine(WS("};"));
-            sw.WriteLine();
-        }
-
         private void CheckNonTerminals()
         {
             foreach (var nonTerminal in _currentGrammar.Variables)
@@ -76,6 +69,7 @@ namespace CustomCompiler.Generator
                 _sw = new(_newFileFullAddress);
                 _sw.WriteLine(WS("using System;"));
                 _sw.WriteLine(WS("using System.IO;"));
+                _sw.WriteLine(WS("using System.Collections.Generic;"));
                 _sw.WriteLine();
                 //Comienzo namespace
                 WriteNewArea(_sw, "namespace NewGrammar");
@@ -86,11 +80,11 @@ namespace CustomCompiler.Generator
                 //Token
                 WriteToken();
 
+                //Symbol
+                WriteSymbol();
+
                 //Scanner
                 WriteLexer();
-
-                //Console Program
-                WriteConsoleProgram();
 
                 //LR 0
                 _currentGrammar.GenerateFirsts();
@@ -98,7 +92,13 @@ namespace CustomCompiler.Generator
 
                 //LALR 1
                 GenerateLALR();
+
+                //WriteParser
                 WriteParserClass();
+
+                //Console Program
+                WriteConsoleProgram();
+
                 //Fin namespace
                 EndArea(_sw);
 
@@ -109,6 +109,14 @@ namespace CustomCompiler.Generator
                 _sw.Close();
                 throw new Exception(ex.Message);
             }
+        }
+
+        private void WriteSymbol()
+        {
+            WriteNewArea(_sw, "struct Symbol");
+            _sw.WriteLine(WS("public string SymbolType;"));
+            _sw.WriteLine(WS("public List<Token> Tokens;"));
+            EndArea(_sw);
         }
 
         private void WriteParserClass()
@@ -136,16 +144,17 @@ namespace CustomCompiler.Generator
             //Inicialización de reglas
             WriteNewArea(_sw, "private void InitializeRules()");
             _sw.WriteLine(WS("_rules = new();"));
-            var productionsDictionary = "";
-            foreach (var terminal in _currentGrammar.Productions)
+            string productionInList;
+            _currentGrammar.PrepareRules();
+            foreach (var production in _currentGrammar.Productions)
             {
-                productionsDictionary = "\"" + terminal.Variable + "\""+ ",";
-                foreach (var productions in terminal.Result)
+                productionInList = $"\"{ production.Variable.Value }\", ";
+                for (int i = 0; i < production.Result.Count; i++)
                 {
-                    productionsDictionary += "\"" + productions.Tag + "\"" + ",";
+                    productionInList += $"\"{ production.Result[i].Value }\"";
+                    if (i != production.Result.Count - 1) productionInList += ", ";
                 }
-                productionsDictionary.TrimEnd(',');
-                _sw.WriteLine(WS("_rules.Add(new List<string> {"+ productionsDictionary +"});"));
+                _sw.WriteLine(WS($"_rules.Add(new List<string> {{ { productionInList } }});"));
             }
             //Finaliza inicialización de reglas
             EndArea(_sw);
@@ -153,11 +162,158 @@ namespace CustomCompiler.Generator
             //Inicialización de tabla
             WriteNewArea(_sw, "private void InitializeTable()");
             _sw.WriteLine(WS("_lalrTable = new();"));
+            _sw.WriteLine(WS("var tempRow = new Dictionary<string, string>();"));
 
-            WriteNewArea(_sw, "var tempRow = new Dictionary<string, string>");
+
+            Dictionary<string, int> shifts;
+            Dictionary<string, int> gotos;
+            Dictionary<string, int> reduces;
+
+            foreach (var state in _LR0Graph)
+            {
+                shifts = new();
+                gotos = new();
+                reduces = new();
+
+                WriteNewArea(_sw, "tempRow = new Dictionary<string, string>");
+
+                if (state.NodeNumber == 1)
+                {
+                    _sw.WriteLine(WS("{ \"'$'\", \"ACCEPT\" }"));
+                }
+                else
+                {
+                    for (int i = 0; i < state.Rules.Count; i++)
+                    {
+                        var nextTokenIndex = state.Rules[i].Result.FindIndex(t => t.Tag == TokenType.Dot) + 1;
+                        if (nextTokenIndex < state.Rules[i].Result.Count)
+                        {
+                            //SHIFT O GOTO
+                            var nextToken = state.Rules[i].Result[nextTokenIndex];
+                            if (nextToken.Tag == TokenType.Terminal)
+                            {
+                                //Shift
+                                //_sw.WriteLine(WS($"{{ \"{ nextToken.Value }\", \"S{ state.Rules[i].NextState }\" }},"));
+                                shifts.TryAdd(nextToken.Value, state.Rules[i].NextState);
+                            }
+                            else
+                            {
+                                //Goto
+                                //_sw.WriteLine(WS($"{{ \"{ nextToken.Value }\", \"{ state.Rules[i].NextState }\" }},"));
+                                gotos.TryAdd(nextToken.Value, state.Rules[i].NextState);
+                            }
+                        }
+                        else
+                        {
+                            //REDUCE
+                            foreach (var lookAhead in state.Rules[i].LookAhead)
+                            {
+                                var ruleNumber = _currentGrammar.GetRuleIndex(state.Rules[i]);
+                                if (lookAhead.Tag == TokenType.Dollar)
+                                {
+                                    _sw.WriteLine(WS($"{{ \"'{ lookAhead.Value }'\", \"R{ ruleNumber }\" }},"));
+                                }
+                                else
+                                {
+                                    _sw.WriteLine(WS($"{{ \"{ lookAhead.Value }\", \"R{ ruleNumber }\" }},"));
+                                }
+                            }
+                        }
+                    }
+
+                    foreach (var item in shifts)
+                    {
+                        _sw.WriteLine(WS($"{{ \"{ item.Key }\", \"S{ item.Value }\" }},"));
+                    }
+
+                    foreach (var item in gotos)
+                    {
+                        _sw.WriteLine(WS($"{{ \"{ item.Key }\", \"{ item.Value }\" }},"));
+                    }
+                }
+                _prevIndentation = _prevIndentation[1..];
+                _sw.WriteLine(WS("};"));
+                _sw.WriteLine(WS($"_lalrTable.Add({ state.NodeNumber }, tempRow);"));
+                _sw.WriteLine();
+            }
             
-            EndObject(_sw);
+            EndArea(_sw);
             //Finaliza inicialización de tabla
+
+            //Método Parse
+            WriteNewArea(_sw, "public void Parse(string regexp)");
+            _sw.WriteLine(WS("_scanner = new Scanner(regexp + (char)TokenType.EOF);"));
+            _sw.WriteLine(WS("Token token;"));
+            _sw.WriteLine(WS("while ((token = _scanner.GetToken()).Tag != TokenType.EOF) _input.Enqueue(token);"));
+            _sw.WriteLine(WS("_input.Enqueue(new Token { Tag = TokenType.Dollar, Value = '$' });"));
+            _sw.WriteLine(WS("_states.Push(0);"));
+            _sw.WriteLine(WS("_symbols.Push(new Symbol { SymbolType = \"#\" });"));
+
+            //Inicio while
+            WriteNewArea(_sw, "while (_input.Count != 0 || _states.Count != 0)");
+
+            //Inicio try
+            WriteNewArea(_sw, "try");
+
+            _sw.WriteLine(WS("var inputPeek = _input.Peek();"));
+            _sw.WriteLine(WS("var action_goto = _lalrTable[_states.Peek()][$\"'{ inputPeek.Value }'\"];"));
+
+            //Inicio if
+            WriteNewArea(_sw, "if (action_goto.Contains(\"S\"))");
+
+            _sw.WriteLine(WS("_states.Push(Convert.ToInt32(action_goto.Remove(0, 1)));"));
+            _sw.WriteLine(WS("_symbols.Push(new Symbol { SymbolType = $\"'{ inputPeek.Value }'\", Tokens = new List<Token> { _input.Dequeue() } });"));
+
+            //fin if
+            EndArea(_sw);
+            //Inicio else if
+            WriteNewArea(_sw, "else if (action_goto.Contains(\"R\"))");
+
+            _sw.WriteLine(WS("var ruleNumber = Convert.ToInt32(action_goto.Remove(0, 1));"));
+            _sw.WriteLine(WS("var rule = _rules[ruleNumber];"));
+            _sw.WriteLine(WS("var productionQty = rule.Count - 1;"));
+            _sw.WriteLine(WS("List<Token> temp = new();"));
+
+            //Inicio for-loop
+            WriteNewArea(_sw, "for (int i = 0; i < productionQty; i++)");
+
+            _sw.WriteLine(WS("var prevTokens = _symbols.Pop().Tokens;"));
+            _sw.WriteLine(WS("foreach (var tokenP in prevTokens) temp.Add(tokenP);"));
+            _sw.WriteLine(WS("_states.Pop();"));
+
+            //Fin for-loop
+            EndArea(_sw);
+
+            _sw.WriteLine(WS("_symbols.Push(new Symbol { SymbolType = rule[0], Tokens = temp});"));
+            _sw.WriteLine(WS("_states.Push(Convert.ToInt32(_lalrTable[_states.Peek()][rule[0]]));"));
+
+            //Fin else if
+            EndArea(_sw);
+            //Inicio else if ACCEPT
+            WriteNewArea(_sw, "else if (action_goto == \"ACCEPT\")");
+
+            _sw.WriteLine(WS("return; //Cadena ok"));
+
+            //Fin else if
+            EndArea(_sw);
+
+            //Fin try
+            EndArea(_sw);
+            //Inicio catch
+            WriteNewArea(_sw, "catch");
+
+            _sw.WriteLine(WS("throw new Exception(\"Acción no encontrada en tabla.Parse Error.\");"));
+
+            //Fin catch
+            EndArea(_sw);
+
+            //Fin while
+            EndArea(_sw);
+
+            //Fin Método Parse
+            EndArea(_sw);
+
+            //Fin clase
             EndArea(_sw);
         }
 
@@ -168,7 +324,8 @@ namespace CustomCompiler.Generator
 
             _sw.WriteLine(WS("EOF = (char)0,"));
             _sw.WriteLine(WS("Terminal = (char)1,"));
-            _sw.WriteLine(WS("NonTerminal = (char)2"));
+            _sw.WriteLine(WS("NonTerminal = (char)2,"));
+            _sw.WriteLine(WS("Dollar = '$'"));
 
             //Fin TokenType
             EndArea(_sw);
@@ -195,20 +352,19 @@ namespace CustomCompiler.Generator
             WriteNewArea(_sw, "static void Main(string[] args)");
 
             _sw.WriteLine(WS("string regexp = Console.ReadLine();"));
-            _sw.WriteLine(WS("Scanner scanner = new(regexp);"));
+            _sw.WriteLine(WS("Parser parser = new Parser();"));
             _sw.WriteLine();
 
-            _sw.WriteLine(WS("Token nextToken;"));
+            WriteNewArea(_sw, "try");
 
-            //Inicio Do-While
-            WriteNewArea(_sw, "do");
+            _sw.WriteLine(WS("parser.Parse(regexp);"));
+            _sw.WriteLine(WS("Console.WriteLine(\"Expresión OK\");"));
 
-            _sw.WriteLine(WS("nextToken = scanner.GetToken();"));
-            _sw.WriteLine(WS("Console.WriteLine($\"Token: {nextToken.Tag}, Value: {nextToken.Value}\");"));
-
-            //Fin Do-While
-            _prevIndentation = _prevIndentation[1..];
-            _sw.WriteLine(WS("} while (nextToken.Tag != TokenType.EOF);"));
+            EndArea(_sw);
+            
+            WriteNewArea(_sw, "catch (Exception ex)");
+            _sw.WriteLine(WS("Console.WriteLine(ex.Message);"));
+            EndArea(_sw);
 
             _sw.WriteLine();
             _sw.WriteLine(WS("Console.ReadLine();"));
@@ -253,7 +409,7 @@ namespace CustomCompiler.Generator
 
             foreach (var terminal in _currentGrammar.Terminals)
             {
-                _sw.WriteLine(WS($"case {terminal}:"));
+                _sw.WriteLine(WS($"case { terminal.Value }:"));
                 _prevIndentation += '\t';
                 _sw.WriteLine(WS("tokenFound = true;"));
                 _sw.WriteLine(WS("result.Tag = TokenType.Terminal;"));
@@ -311,7 +467,7 @@ namespace CustomCompiler.Generator
 
         private void GenerateLALR()
         {
-            _LR0Graph[0].Rules[0].LookAhead = new List<Token> { new Token { Tag = TokenType.Dollar } };
+            _LR0Graph[0].Rules[0].LookAhead = new List<Token> { new Token { Tag = TokenType.Dollar, Value = "$" } };
             ModifyStateLookAhead(_LR0Graph[0]);
         }
 
