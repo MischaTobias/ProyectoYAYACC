@@ -177,41 +177,48 @@ namespace CustomCompiler.Generator
 
                 WriteNewArea(_sw, "tempRow = new Dictionary<string, string>");
 
-                if (state.NodeNumber == 1)
+                for (int i = 0; i < state.Rules.Count; i++)
                 {
-                    _sw.WriteLine(WS("{ \"'$'\", \"ACCEPT\" }"));
-                }
-                else
-                {
-                    for (int i = 0; i < state.Rules.Count; i++)
+                    var nextTokenIndex = state.Rules[i].Result.FindIndex(t => t.Tag == TokenType.Dot) + 1;
+                    if (nextTokenIndex < state.Rules[i].Result.Count)
                     {
-                        var nextTokenIndex = state.Rules[i].Result.FindIndex(t => t.Tag == TokenType.Dot) + 1;
-                        if (nextTokenIndex < state.Rules[i].Result.Count)
+                        //SHIFT O GOTO
+                        var nextToken = state.Rules[i].Result[nextTokenIndex];
+                        if (nextToken.Tag == TokenType.Terminal)
                         {
-                            //SHIFT O GOTO
-                            var nextToken = state.Rules[i].Result[nextTokenIndex];
-                            if (nextToken.Tag == TokenType.Terminal)
-                            {
-                                //Shift
-                                //_sw.WriteLine(WS($"{{ \"{ nextToken.Value }\", \"S{ state.Rules[i].NextState }\" }},"));
-                                shifts.TryAdd(nextToken.Value, state.Rules[i].NextState);
-                            }
-                            else
-                            {
-                                //Goto
-                                //_sw.WriteLine(WS($"{{ \"{ nextToken.Value }\", \"{ state.Rules[i].NextState }\" }},"));
-                                gotos.TryAdd(nextToken.Value, state.Rules[i].NextState);
-                            }
+                            //Shift
+                            //_sw.WriteLine(WS($"{{ \"{ nextToken.Value }\", \"S{ state.Rules[i].NextState }\" }},"));
+                            shifts.TryAdd(nextToken.Value, state.Rules[i].NextState);
                         }
                         else
                         {
-                            //REDUCE
-                            foreach (var lookAhead in state.Rules[i].LookAhead)
+                            //Goto
+                            //_sw.WriteLine(WS($"{{ \"{ nextToken.Value }\", \"{ state.Rules[i].NextState }\" }},"));
+                            gotos.TryAdd(nextToken.Value, state.Rules[i].NextState);
+                        }
+                    }
+                    else
+                    {
+                        //REDUCE
+                        foreach (var lookAhead in state.Rules[i].LookAhead)
+                        {
+                            var ruleNumber = _currentGrammar.GetRuleIndex(state.Rules[i]);
+                            if (lookAhead.Tag == TokenType.Dollar)
                             {
-                                var ruleNumber = _currentGrammar.GetRuleIndex(state.Rules[i]);
-                                if (lookAhead.Tag == TokenType.Dollar)
+                                if (ruleNumber == 0)//Regla Inicial
+                                {
+                                    _sw.WriteLine(WS($"{{ \"'{ lookAhead.Value }'\", \"ACCEPT\" }},"));
+                                }
+                                else
                                 {
                                     _sw.WriteLine(WS($"{{ \"'{ lookAhead.Value }'\", \"R{ ruleNumber }\" }},"));
+                                }
+                            }
+                            else
+                            {
+                                if (ruleNumber == 0)
+                                {
+                                    _sw.WriteLine(WS($"{{ \"{ lookAhead.Value }\", \"ACCEPT\" }},"));
                                 }
                                 else
                                 {
@@ -220,16 +227,16 @@ namespace CustomCompiler.Generator
                             }
                         }
                     }
+                }
 
-                    foreach (var item in shifts)
-                    {
-                        _sw.WriteLine(WS($"{{ \"{ item.Key }\", \"S{ item.Value }\" }},"));
-                    }
+                foreach (var item in shifts)
+                {
+                    _sw.WriteLine(WS($"{{ \"{ item.Key }\", \"S{ item.Value }\" }},"));
+                }
 
-                    foreach (var item in gotos)
-                    {
-                        _sw.WriteLine(WS($"{{ \"{ item.Key }\", \"{ item.Value }\" }},"));
-                    }
+                foreach (var item in gotos)
+                {
+                    _sw.WriteLine(WS($"{{ \"{ item.Key }\", \"{ item.Value }\" }},"));
                 }
                 _prevIndentation = _prevIndentation[1..];
                 _sw.WriteLine(WS("};"));

@@ -73,7 +73,7 @@ namespace CustomCompiler.Grammar_Structure
             if (FirstList.ContainsKey(token)) return;
 
             var tokenList = new List<Token>();
-            var rulesByNonTerminal = Productions.Where(p => p.Variable.Value == token.Value);
+            var rulesByNonTerminal = Productions.Where(p => p.Variable.Value == token.Value && p.Result[0].Value != token.Value);
             foreach (var rule in rulesByNonTerminal)
             {
                 var firstElement = rule.Result[0];

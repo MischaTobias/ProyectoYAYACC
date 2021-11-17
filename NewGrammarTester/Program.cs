@@ -43,27 +43,27 @@ namespace NewGrammar
 				char peek = _regexp[_index];
 				switch (peek)
 				{
-					case 'n':
+					case '+':
 						tokenFound = true;
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
 						break;
-					case ':':
+					case '-':
 						tokenFound = true;
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
 						break;
-					case ';':
+					case 'x':
 						tokenFound = true;
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
 						break;
-					case '|':
+					case '(':
 						tokenFound = true;
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
 						break;
-					case 't':
+					case ')':
 						tokenFound = true;
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
@@ -105,16 +105,12 @@ namespace NewGrammar
 		private void InitializeRules()
 		{
 			_rules = new();
-			_rules.Add(new List<string> { "G'", "G" });
-			_rules.Add(new List<string> { "G", "S", "G" });
-			_rules.Add(new List<string> { "G", "S" });
-			_rules.Add(new List<string> { "S", "'n'", "':'", "SP", "';'" });
-			_rules.Add(new List<string> { "SP", "C", "'|'", "SP" });
-			_rules.Add(new List<string> { "SP", "C" });
-			_rules.Add(new List<string> { "C", "SC", "C" });
-			_rules.Add(new List<string> { "C", "SC" });
-			_rules.Add(new List<string> { "SC", "'n'" });
-			_rules.Add(new List<string> { "SC", "'t'" });
+			_rules.Add(new List<string> { "Expr'", "Expr" });
+			_rules.Add(new List<string> { "Expr", "Expr", "'+'", "Term" });
+			_rules.Add(new List<string> { "Expr", "Expr", "'-'", "Term" });
+			_rules.Add(new List<string> { "Expr", "Term" });
+			_rules.Add(new List<string> { "Term", "'x'" });
+			_rules.Add(new List<string> { "Term", "'('", "Expr", "')'" });
 		}
 
 		private void InitializeTable()
@@ -123,120 +119,98 @@ namespace NewGrammar
 			var tempRow = new Dictionary<string, string>();
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'n'", "S4" },
-				{ "G", "1" },
-				{ "S", "2" },
+				{ "'x'", "S4" },
+				{ "'('", "S5" },
+				{ "Expr", "1" },
+				{ "Term", "10" },
 			};
 			_lalrTable.Add(0, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'$'", "ACCEPT" }
+				{ "'$'", "ACCEPT" },
+				{ "'+'", "S2" },
+				{ "'-'", "S8" },
 			};
 			_lalrTable.Add(1, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'$'", "R2" },
-				{ "'n'", "S4" },
-				{ "G", "3" },
-				{ "S", "2" },
+				{ "'x'", "S4" },
+				{ "'('", "S5" },
+				{ "Term", "3" },
 			};
 			_lalrTable.Add(2, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
 				{ "'$'", "R1" },
+				{ "'+'", "R1" },
+				{ "'-'", "R1" },
+				{ "')'", "R1" },
 			};
 			_lalrTable.Add(3, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "':'", "S5" },
+				{ "'$'", "R4" },
+				{ "'+'", "R4" },
+				{ "'-'", "R4" },
+				{ "')'", "R4" },
 			};
 			_lalrTable.Add(4, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'n'", "S13" },
-				{ "'t'", "S14" },
-				{ "SP", "6" },
-				{ "C", "8" },
-				{ "SC", "11" },
+				{ "'x'", "S4" },
+				{ "'('", "S5" },
+				{ "Expr", "6" },
+				{ "Term", "10" },
 			};
 			_lalrTable.Add(5, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "';'", "S7" },
+				{ "')'", "S7" },
+				{ "'+'", "S2" },
+				{ "'-'", "S8" },
 			};
 			_lalrTable.Add(6, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'n'", "R3" },
-				{ "'$'", "R3" },
+				{ "'$'", "R5" },
+				{ "'+'", "R5" },
+				{ "'-'", "R5" },
+				{ "')'", "R5" },
 			};
 			_lalrTable.Add(7, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "';'", "R5" },
-				{ "'|'", "S9" },
+				{ "'x'", "S4" },
+				{ "'('", "S5" },
+				{ "Term", "9" },
 			};
 			_lalrTable.Add(8, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'n'", "S13" },
-				{ "'t'", "S14" },
-				{ "SP", "10" },
-				{ "C", "8" },
-				{ "SC", "11" },
+				{ "'$'", "R2" },
+				{ "'+'", "R2" },
+				{ "'-'", "R2" },
+				{ "')'", "R2" },
 			};
 			_lalrTable.Add(9, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "';'", "R4" },
+				{ "'$'", "R3" },
+				{ "'+'", "R3" },
+				{ "'-'", "R3" },
+				{ "')'", "R3" },
 			};
 			_lalrTable.Add(10, tempRow);
-
-			tempRow = new Dictionary<string, string>
-			{
-				{ "'|'", "R7" },
-				{ "';'", "R7" },
-				{ "'n'", "S13" },
-				{ "'t'", "S14" },
-				{ "C", "12" },
-				{ "SC", "11" },
-			};
-			_lalrTable.Add(11, tempRow);
-
-			tempRow = new Dictionary<string, string>
-			{
-				{ "'|'", "R6" },
-				{ "';'", "R6" },
-			};
-			_lalrTable.Add(12, tempRow);
-
-			tempRow = new Dictionary<string, string>
-			{
-				{ "'n'", "R8" },
-				{ "'t'", "R8" },
-				{ "'|'", "R8" },
-				{ "';'", "R8" },
-			};
-			_lalrTable.Add(13, tempRow);
-
-			tempRow = new Dictionary<string, string>
-			{
-				{ "'n'", "R9" },
-				{ "'t'", "R9" },
-				{ "'|'", "R9" },
-				{ "';'", "R9" },
-			};
-			_lalrTable.Add(14, tempRow);
 
 		}
 
