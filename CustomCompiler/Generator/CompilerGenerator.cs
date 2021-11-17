@@ -44,6 +44,13 @@ namespace CustomCompiler.Generator
             sw.WriteLine();
         }
 
+        private void EndObject(StreamWriter sw)
+        {
+            _prevIndentation = _prevIndentation[1..];
+            sw.WriteLine(WS("};"));
+            sw.WriteLine();
+        }
+
         private void CheckNonTerminals()
         {
             foreach (var nonTerminal in _currentGrammar.Variables)
@@ -91,7 +98,7 @@ namespace CustomCompiler.Generator
 
                 //LALR 1
                 GenerateLALR();
-
+                WriteParserClass();
                 //Fin namespace
                 EndArea(_sw);
 
@@ -102,6 +109,56 @@ namespace CustomCompiler.Generator
                 _sw.Close();
                 throw new Exception(ex.Message);
             }
+        }
+
+        private void WriteParserClass()
+        {
+            //Inicio Parser
+            WriteNewArea(_sw, "public class Parser");
+            _sw.WriteLine(WS("private Scanner _scanner;"));
+            _sw.WriteLine(WS("private Dictionary<int, Dictionary<string, string>> _lalrTable;"));
+            _sw.WriteLine(WS("private List<List<string>> _rules;"));
+            _sw.WriteLine(WS("private Stack<int> _states;"));
+            _sw.WriteLine(WS("private Stack<Symbol> _symbols;"));
+            _sw.WriteLine(WS("private Queue<Token> _input;"));
+
+            //Inicio Constructor Parser
+            WriteNewArea(_sw, "public Parser()");
+            _sw.WriteLine(WS("InitializeTable();"));
+            _sw.WriteLine(WS("InitializeRules();"));
+            _sw.WriteLine(WS("_states = new();"));
+            _sw.WriteLine(WS("_symbols = new();"));
+            _sw.WriteLine(WS("_input = new();"));
+
+            //Finaliza constructor del parser
+            EndArea(_sw);
+
+            //Inicialización de reglas
+            WriteNewArea(_sw, "private void InitializeRules()");
+            _sw.WriteLine(WS("_rules = new();"));
+            var productionsDictionary = "";
+            foreach (var terminal in _currentGrammar.Productions)
+            {
+                productionsDictionary = "\"" + terminal.Variable + "\""+ ",";
+                foreach (var productions in terminal.Result)
+                {
+                    productionsDictionary += "\"" + productions.Tag + "\"" + ",";
+                }
+                productionsDictionary.TrimEnd(',');
+                _sw.WriteLine(WS("_rules.Add(new List<string> {"+ productionsDictionary +"});"));
+            }
+            //Finaliza inicialización de reglas
+            EndArea(_sw);
+
+            //Inicialización de tabla
+            WriteNewArea(_sw, "private void InitializeTable()");
+            _sw.WriteLine(WS("_lalrTable = new();"));
+
+            WriteNewArea(_sw, "var tempRow = new Dictionary<string, string>");
+            
+            EndObject(_sw);
+            //Finaliza inicialización de tabla
+            EndArea(_sw);
         }
 
         private void WriteTokenType()
