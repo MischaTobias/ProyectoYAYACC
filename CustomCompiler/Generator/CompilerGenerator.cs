@@ -344,6 +344,7 @@ namespace CustomCompiler.Generator
                 var newProd = new Production
                 {
                     Variable = prod.Variable,
+                    LookAhead = new List<Token> { new Token { Tag = TokenType.Hash } }
                 };
 
                 prod.Result.ForEach(t => newProd.Result.Add(t));
@@ -352,6 +353,7 @@ namespace CustomCompiler.Generator
                 if (dotPosition < newProd.Result.Count - 1)
                 {
                     var nextCharacter = newProd.Result[dotPosition + 1];
+                    
                     newProd.Result.Reverse(dotPosition, 2);
 
                     if (nextCharacters.ContainsKey(nextCharacter))
@@ -374,6 +376,10 @@ namespace CustomCompiler.Generator
                     GenerateNewState(prod.Value);
                 }
             }
+        }
+
+        private void GenerateLALRGraph() { 
+            
         }
 
         private bool AlreadyExists(List<Production> productions)

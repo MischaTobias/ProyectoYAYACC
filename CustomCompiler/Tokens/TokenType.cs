@@ -8,6 +8,7 @@
         Apostrophe = '\'',
         BackSlash = '\\',
         Dollar = '$',
+        Hash = '#',
         EOF = (char)0,
         Terminal = (char)1,
         NonTerminal = (char)2,
