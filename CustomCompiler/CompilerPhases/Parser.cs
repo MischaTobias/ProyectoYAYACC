@@ -1,9 +1,9 @@
 ﻿using System;
 using System.IO;
-using CustomCompiler.Tokens;
-using CustomCompiler.Grammar_Structure;
-using System.Collections.Generic;
 using System.Linq;
+using CustomCompiler.Tokens;
+using System.Collections.Generic;
+using CustomCompiler.Grammar_Structure;
 
 namespace CustomCompiler.CompilerPhases
 {
@@ -27,7 +27,7 @@ namespace CustomCompiler.CompilerPhases
 
         private void InitializeRules()
         {
-            _rules = new();
+            _rules = new();              //Primer dato es regla que produce, los siguientes son producción
             _rules.Add(new List<string> { "G", "S", "G" });
             _rules.Add(new List<string> { "G", "S" });
             _rules.Add(new List<string> { "S", "NT", ":", "S'", ";" });

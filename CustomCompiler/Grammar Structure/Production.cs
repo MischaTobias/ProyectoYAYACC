@@ -8,6 +8,7 @@ namespace CustomCompiler.Grammar_Structure
         public Token Variable { get; set; }
         public List<Token> Result = new();
         public List<Token> LookAhead = new();
+        public int NextState = -1;
 
 
         public static bool CompareProductionResult(Production prod1, Production prod2)

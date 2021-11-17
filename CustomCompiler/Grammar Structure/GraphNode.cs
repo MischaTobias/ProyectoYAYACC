@@ -6,6 +6,7 @@ namespace CustomCompiler.Grammar_Structure
 {
     public class GraphNode
     {
+        public int NodeNumber = -1;
         public List<Production> Rules = new();
         public Dictionary<Production, int> SharingNodes = new();
         public bool Finished = false;
@@ -34,23 +35,65 @@ namespace CustomCompiler.Grammar_Structure
             return existsInTempList || existsInNewNode;
         }
 
-        public void GenerateLookAheads()
+        public void AssignNumberToRule(int nodeNumber, Production prod)
         {
-            var firstRuleLookAhead = Rules[0].LookAhead;
-            var nextTokenIndex = Rules[0].Result.FindIndex(t => t.Tag == TokenType.Dot) + 1;
-            if (nextTokenIndex < Rules[0].Result.Count)
-            {
-                var nextToken = Rules[0].Result[nextTokenIndex];
-                if (nextToken.Tag == TokenType.NonTerminal)
-                {
+            var sameRuleNumber = GetSameProduction(prod);
+            if (sameRuleNumber == -1) throw new System.Exception("Tried to use a production that doesn't exist");
+            Rules[sameRuleNumber].NextState = nodeNumber;
+        }
 
+        public bool LookAheadIsTheSame(List<Production> productions)
+        {
+            bool sameLookAheads = true;
+            foreach (var prod in productions)
+            {
+                var sameRuleNumber = GetSameProduction(prod);
+                if (sameRuleNumber == -1) throw new System.Exception("Tried to use a production that doesn't exist");
+                foreach (var lookAhead in prod.LookAhead)
+                {
+                    sameLookAheads = sameLookAheads && Rules[sameRuleNumber].LookAhead.Contains(lookAhead);
+                    if (!sameLookAheads) return false;
+                }
+            }
+            return true;
+        }
+
+        public void ChangeLookAheadForRules(List<Production> productions)
+        {
+            foreach (var prod in productions)
+            {
+                var sameRuleNumber = GetSameProduction(prod);
+                if (sameRuleNumber == -1) throw new System.Exception("Tried to use a production that doesn't exist");
+                foreach (var token in prod.LookAhead)
+                {
+                    if (!Rules[sameRuleNumber].LookAhead.Contains(token))
+                    {
+                        Rules[sameRuleNumber].LookAhead.Add(token);
+                    }
                 }
             }
         }
 
-        private void GenerateNextLookAhead()
+        private int GetSameProduction(Production prod)
         {
+            bool isTheSameRule;
 
+            for (int i = 0; i < Rules.Count; i++)
+            {
+                isTheSameRule = true;
+                if (Rules[i].Result.Count == prod.Result.Count)
+                {
+                    for (int j = 0; j < Rules[i].Result.Count; j++)
+                    {
+                        isTheSameRule = isTheSameRule && Rules[i].Result[j].Value == prod.Result[j].Value;
+                        if (!isTheSameRule) break;
+                    }
+
+                    if (isTheSameRule) return i;
+                }
+            }
+
+            return -1;
         }
     }
 }
