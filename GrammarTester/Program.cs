@@ -18,6 +18,7 @@ namespace GrammarTester
                 Console.WriteLine(grammarResult.GetString());
                 CompilerGenerator generator = new(address, grammarResult);
                 generator.GenerateCompiler();
+                Console.WriteLine("Se ha generado un archivo .csv en la direccion: " + address);
             }
             catch (Exception ex)
             {
