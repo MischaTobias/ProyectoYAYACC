@@ -68,7 +68,6 @@ namespace CustomCompiler.Generator
             {
                 _sw = new(_newFileFullAddress);
                 _sw.WriteLine(WS("using System;"));
-                _sw.WriteLine(WS("using System.IO;"));
                 _sw.WriteLine(WS("using System.Collections.Generic;"));
                 _sw.WriteLine();
                 //Comienzo namespace

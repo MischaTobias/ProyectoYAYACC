@@ -48,22 +48,17 @@ namespace NewGrammar
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
 						break;
-					case '-':
+					case '*':
 						tokenFound = true;
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
 						break;
-					case 'x':
+					case 'a':
 						tokenFound = true;
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
 						break;
-					case '(':
-						tokenFound = true;
-						result.Tag = TokenType.Terminal;
-						result.Value = peek;
-						break;
-					case ')':
+					case 'b':
 						tokenFound = true;
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
@@ -105,12 +100,13 @@ namespace NewGrammar
 		private void InitializeRules()
 		{
 			_rules = new();
-			_rules.Add(new List<string> { "Expr'", "Expr" });
-			_rules.Add(new List<string> { "Expr", "Expr", "'+'", "Term" });
-			_rules.Add(new List<string> { "Expr", "Expr", "'-'", "Term" });
-			_rules.Add(new List<string> { "Expr", "Term" });
-			_rules.Add(new List<string> { "Term", "'x'" });
-			_rules.Add(new List<string> { "Term", "'('", "Expr", "')'" });
+			_rules.Add(new List<string> { "S'", "S" });
+			_rules.Add(new List<string> { "S", "S", "'+'", "T" });
+			_rules.Add(new List<string> { "S", "T" });
+			_rules.Add(new List<string> { "T", "T", "'*'", "F" });
+			_rules.Add(new List<string> { "T", "F" });
+			_rules.Add(new List<string> { "F", "'a'" });
+			_rules.Add(new List<string> { "F", "'b'" });
 		}
 
 		private void InitializeTable()
@@ -119,10 +115,11 @@ namespace NewGrammar
 			var tempRow = new Dictionary<string, string>();
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'x'", "S4" },
-				{ "'('", "S5" },
-				{ "Expr", "1" },
-				{ "Term", "10" },
+				{ "'a'", "S6" },
+				{ "'b'", "S7" },
+				{ "S", "1" },
+				{ "T", "9" },
+				{ "F", "8" },
 			};
 			_lalrTable.Add(0, tempRow);
 
@@ -130,15 +127,15 @@ namespace NewGrammar
 			{
 				{ "'$'", "ACCEPT" },
 				{ "'+'", "S2" },
-				{ "'-'", "S8" },
 			};
 			_lalrTable.Add(1, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'x'", "S4" },
-				{ "'('", "S5" },
-				{ "Term", "3" },
+				{ "'a'", "S6" },
+				{ "'b'", "S7" },
+				{ "T", "3" },
+				{ "F", "8" },
 			};
 			_lalrTable.Add(2, tempRow);
 
@@ -146,51 +143,47 @@ namespace NewGrammar
 			{
 				{ "'$'", "R1" },
 				{ "'+'", "R1" },
-				{ "'-'", "R1" },
-				{ "')'", "R1" },
+				{ "'*'", "S4" },
 			};
 			_lalrTable.Add(3, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'$'", "R4" },
-				{ "'+'", "R4" },
-				{ "'-'", "R4" },
-				{ "')'", "R4" },
+				{ "'a'", "S6" },
+				{ "'b'", "S7" },
+				{ "F", "5" },
 			};
 			_lalrTable.Add(4, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'x'", "S4" },
-				{ "'('", "S5" },
-				{ "Expr", "6" },
-				{ "Term", "10" },
+				{ "'$'", "R3" },
+				{ "'+'", "R3" },
+				{ "'*'", "R3" },
 			};
 			_lalrTable.Add(5, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "')'", "S7" },
-				{ "'+'", "S2" },
-				{ "'-'", "S8" },
+				{ "'$'", "R5" },
+				{ "'+'", "R5" },
+				{ "'*'", "R5" },
 			};
 			_lalrTable.Add(6, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'$'", "R5" },
-				{ "'+'", "R5" },
-				{ "'-'", "R5" },
-				{ "')'", "R5" },
+				{ "'$'", "R6" },
+				{ "'+'", "R6" },
+				{ "'*'", "R6" },
 			};
 			_lalrTable.Add(7, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'x'", "S4" },
-				{ "'('", "S5" },
-				{ "Term", "9" },
+				{ "'$'", "R4" },
+				{ "'+'", "R4" },
+				{ "'*'", "R4" },
 			};
 			_lalrTable.Add(8, tempRow);
 
@@ -198,19 +191,9 @@ namespace NewGrammar
 			{
 				{ "'$'", "R2" },
 				{ "'+'", "R2" },
-				{ "'-'", "R2" },
-				{ "')'", "R2" },
+				{ "'*'", "S4" },
 			};
 			_lalrTable.Add(9, tempRow);
-
-			tempRow = new Dictionary<string, string>
-			{
-				{ "'$'", "R3" },
-				{ "'+'", "R3" },
-				{ "'-'", "R3" },
-				{ "')'", "R3" },
-			};
-			_lalrTable.Add(10, tempRow);
 
 		}
 
