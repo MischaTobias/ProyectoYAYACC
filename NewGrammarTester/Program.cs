@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
 
 namespace NewGrammar
@@ -43,7 +42,7 @@ namespace NewGrammar
 				char peek = _regexp[_index];
 				switch (peek)
 				{
-					case '+':
+					case '=':
 						tokenFound = true;
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
@@ -53,12 +52,7 @@ namespace NewGrammar
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
 						break;
-					case 'a':
-						tokenFound = true;
-						result.Tag = TokenType.Terminal;
-						result.Value = peek;
-						break;
-					case 'b':
+					case 'n':
 						tokenFound = true;
 						result.Tag = TokenType.Terminal;
 						result.Value = peek;
@@ -101,12 +95,11 @@ namespace NewGrammar
 		{
 			_rules = new();
 			_rules.Add(new List<string> { "S'", "S" });
-			_rules.Add(new List<string> { "S", "S", "'+'", "T" });
-			_rules.Add(new List<string> { "S", "T" });
-			_rules.Add(new List<string> { "T", "T", "'*'", "F" });
-			_rules.Add(new List<string> { "T", "F" });
-			_rules.Add(new List<string> { "F", "'a'" });
-			_rules.Add(new List<string> { "F", "'b'" });
+			_rules.Add(new List<string> { "S", "L", "'='", "R" });
+			_rules.Add(new List<string> { "S", "R" });
+			_rules.Add(new List<string> { "L", "'*'", "R" });
+			_rules.Add(new List<string> { "L", "'n'" });
+			_rules.Add(new List<string> { "R", "L" });
 		}
 
 		private void InitializeTable()
@@ -115,83 +108,75 @@ namespace NewGrammar
 			var tempRow = new Dictionary<string, string>();
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'a'", "S6" },
-				{ "'b'", "S7" },
+				{ "'*'", "S6" },
+				{ "'n'", "S8" },
 				{ "S", "1" },
-				{ "T", "9" },
-				{ "F", "8" },
+				{ "L", "2" },
+				{ "R", "9" },
 			};
 			_lalrTable.Add(0, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
 				{ "'$'", "ACCEPT" },
-				{ "'+'", "S2" },
 			};
 			_lalrTable.Add(1, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'a'", "S6" },
-				{ "'b'", "S7" },
-				{ "T", "3" },
-				{ "F", "8" },
+				{ "'$'", "R5" },
+				{ "'='", "S3" },
 			};
 			_lalrTable.Add(2, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'$'", "R1" },
-				{ "'+'", "R1" },
-				{ "'*'", "S4" },
+				{ "'*'", "S6" },
+				{ "'n'", "S8" },
+				{ "R", "4" },
+				{ "L", "5" },
 			};
 			_lalrTable.Add(3, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'a'", "S6" },
-				{ "'b'", "S7" },
-				{ "F", "5" },
+				{ "'$'", "R1" },
 			};
 			_lalrTable.Add(4, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'$'", "R3" },
-				{ "'+'", "R3" },
-				{ "'*'", "R3" },
+				{ "'$'", "R5" },
+				{ "'='", "R5" },
 			};
 			_lalrTable.Add(5, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'$'", "R5" },
-				{ "'+'", "R5" },
-				{ "'*'", "R5" },
+				{ "'*'", "S6" },
+				{ "'n'", "S8" },
+				{ "R", "7" },
+				{ "L", "5" },
 			};
 			_lalrTable.Add(6, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
-				{ "'$'", "R6" },
-				{ "'+'", "R6" },
-				{ "'*'", "R6" },
+				{ "'$'", "R3" },
+				{ "'='", "R3" },
 			};
 			_lalrTable.Add(7, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
 				{ "'$'", "R4" },
-				{ "'+'", "R4" },
-				{ "'*'", "R4" },
+				{ "'='", "R4" },
 			};
 			_lalrTable.Add(8, tempRow);
 
 			tempRow = new Dictionary<string, string>
 			{
 				{ "'$'", "R2" },
-				{ "'+'", "R2" },
-				{ "'*'", "S4" },
 			};
 			_lalrTable.Add(9, tempRow);
 
@@ -256,6 +241,7 @@ namespace NewGrammar
 	{
 		static void Main(string[] args)
 		{
+			Console.WriteLine("Ingrese la cadena a validar con la gramática ingresada");
 			string regexp = Console.ReadLine();
 			Parser parser = new Parser();
 

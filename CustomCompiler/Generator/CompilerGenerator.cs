@@ -357,6 +357,7 @@ namespace CustomCompiler.Generator
             //Inicio Main
             WriteNewArea(_sw, "static void Main(string[] args)");
 
+            _sw.WriteLine(WS("Console.WriteLine(\"Ingrese la cadena a validar con la gramática ingresada\");"));
             _sw.WriteLine(WS("string regexp = Console.ReadLine();"));
             _sw.WriteLine(WS("Parser parser = new Parser();"));
             _sw.WriteLine();
@@ -464,7 +465,8 @@ namespace CustomCompiler.Generator
                 new Production
                 {
                     Variable = _currentGrammar.Productions[0].Variable,
-                    Result = _currentGrammar.Productions[0].Result
+                    Result = _currentGrammar.Productions[0].Result,
+                    LookAhead = new List<Token>()
                 }
             };
 
@@ -496,7 +498,11 @@ namespace CustomCompiler.Generator
                             var lookAheadToken = rule.Result[lookAheadTokenIndex];
                             if (lookAheadToken.Tag == TokenType.NonTerminal)
                             {
-                                lookAhead = _currentGrammar.FirstList[lookAheadToken];
+                                lookAhead = new List<Token>();
+                                foreach (var token in _currentGrammar.FirstList[lookAheadToken])
+                                {
+                                    lookAhead.Add(token);
+                                }
                             }
                             else
                             {
@@ -505,7 +511,11 @@ namespace CustomCompiler.Generator
                         }
                         else
                         {
-                            lookAhead = rule.LookAhead;
+                            lookAhead = new List<Token>();
+                            foreach (var token in rule.LookAhead)
+                            {
+                                lookAhead.Add(token);
+                            }
                         }
 
                         foreach (var nodeRule in node.Rules)
@@ -572,6 +582,8 @@ namespace CustomCompiler.Generator
                 var newProd = new Production
                 {
                     Variable = prod.Variable,
+                    Result = new List<Token>(),
+                    LookAhead = new List<Token>()
                 };
 
                 prod.Result.ForEach(t => newProd.Result.Add(t));
@@ -618,7 +630,16 @@ namespace CustomCompiler.Generator
                     {
                         if (!GraphNode.RuleExists(_tempRuleList, newNode, nextToken))
                         {
-                            _tempRuleList.AddRange(_currentGrammar.Productions.Where(p => p.Variable.Value == nextToken.Value));
+                            foreach (var rule in _currentGrammar.Productions.Where(p => p.Variable.Value == nextToken.Value))
+                            {
+                                var newRule = new Production
+                                {
+                                    Variable = nextToken
+                                };
+                                newRule.Result = new List<Token>();
+                                rule.Result.ForEach(t => newRule.Result.Add(t));
+                                _tempRuleList.Add(newRule);
+                            }
                         }
                     }
                 }
