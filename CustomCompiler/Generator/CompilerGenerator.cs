@@ -357,6 +357,9 @@ namespace CustomCompiler.Generator
             //Inicio Main
             WriteNewArea(_sw, "static void Main(string[] args)");
 
+            _sw.WriteLine(WS("bool exit = false;"));
+            WriteNewArea(_sw, "while (!exit)");
+            _sw.WriteLine(WS("Console.WriteLine(\"----------------Validación de gramática---------------\");"));
             _sw.WriteLine(WS("Console.WriteLine(\"Ingrese la cadena a validar con la gramática ingresada\");"));
             _sw.WriteLine(WS("string regexp = Console.ReadLine();"));
             _sw.WriteLine(WS("Parser parser = new Parser();"));
@@ -365,17 +368,23 @@ namespace CustomCompiler.Generator
             WriteNewArea(_sw, "try");
 
             _sw.WriteLine(WS("parser.Parse(regexp);"));
-            _sw.WriteLine(WS("Console.WriteLine(\"Expresión OK\");"));
+            _sw.WriteLine(WS("Console.WriteLine(\"Expresión válida.\\n\");"));
 
             EndArea(_sw);
-            
+
             WriteNewArea(_sw, "catch (Exception ex)");
             _sw.WriteLine(WS("Console.WriteLine(ex.Message);"));
             EndArea(_sw);
 
-            _sw.WriteLine();
-            _sw.WriteLine(WS("Console.ReadLine();"));
-
+            _sw.WriteLine(WS("Console.WriteLine(\"¿Desea validar otra cadena ? Y / N\");"));
+            WriteNewArea(_sw, "if (Console.ReadKey().Key == ConsoleKey.N)");
+            _sw.WriteLine(WS("exit = true;"));
+            EndArea(_sw);
+            WriteNewArea(_sw, "else");
+            _sw.WriteLine(WS("Console.Clear();"));
+            EndArea(_sw);
+            EndArea(_sw);
+            
             //Fin Main
             EndArea(_sw);
 
