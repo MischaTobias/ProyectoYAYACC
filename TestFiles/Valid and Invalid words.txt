@@ -1,0 +1,103 @@
+- Palabras validadas para las gramáticas ingresadas -
+----------------------------
+	Gramatica 1
+SP -> S 
+S -> L = ​R | R
+L -> * R | n
+R -> L
+Aceptada
+	*n=*n
+	**n=*n
+	n=***n
+No aceptada
+	n=n*n
+	n*n=*n
+	*n=**n*n
+----------------------------
+	Gramatica 2
+A -> x A | n | B
+B -> x y | x
+Aceptada
+	xn
+	xxxxy
+	xxn
+No aceptada
+	yxn
+	xxxny
+	nxxy
+----------------------------
+	Gramatica 3
+S -> S + T | T 
+T -> T * F | F
+F -> a | b
+Aceptada
+	a*b+a
+	a*a+b*a*b
+	a*a+b*a
+No aceptada
+	a+b*c
+	aa+b+a
+	a+b*a+b**
+----------------------------
+	Gramatica 4
+SP -> S
+S-> C C
+C -> e C | d
+Aceptada
+	eeeded
+	eded
+	eeeeeedd
+No aceptada
+	eeeedeeded
+	eeedded
+	ede
+----------------------------
+	Gramatica 5
+bE -> bE || bT 
+bE -> bT 
+bT -> bT && bF | bF 
+bF -> ! bF | ( bE ) | 1 | 0
+Aceptada
+	1||1&&0
+	0&&1||!0
+	1&&1&&0
+No aceptada
+	0||1&&01
+	0!&&0||1
+	1|0&1
+----------------------------
+	Gramatica 6
+E -> E + T | T
+T -> T * F | F 
+F -> ( E ) | i | n
+Aceptada
+	i+n*(n+n)
+	(n+n)+(i*n)
+	i+n*i
+No aceptada
+	(n+n)+(n*1)
+	i+n(n*n)
+	n+i*(n+i)(n*n)
+----------------------------
+	Gramatica 7
+Expr -> Expr + Term | Expr - Term | Term
+Term ->  x | ( Expr )
+Aceptada
+	x+x-x
+	(x+x)-x
+	(x+x-x)+(x+x)
+No aceptada
+	(x+x)(x)
+	xx+x-x
+	x-x+-x
+----------------------------
+	Gramatica 8
+A -> a A | b A | a | b
+Aceptada
+	aaba
+	aaaabbbba
+	ababab
+No aceptada
+	ababc
+	abb(ab)
+	babaa1
